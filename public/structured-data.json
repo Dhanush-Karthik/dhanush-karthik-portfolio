@@ -1,0 +1,21 @@
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Dhanush Karthik",
+  "url": "https://dhanushkarthik.dev",
+  "jobTitle": "Java Backend Engineer",
+  "worksFor": {
+    "@type": "Organization",
+    "name": "Grootan Technologies"
+  },
+  "sameAs": [
+    "https://www.linkedin.com/in/dhanush-karthik/",
+    "https://github.com/dhanushkarthik"
+  ],
+  "knowsAbout": ["Java", "Spring Boot", "Microservices", "Keycloak", "REST API", "MySQL", "Docker", "Backend Development"],
+  "alumniOf": {
+    "@type": "EducationalOrganization",
+    "name": "Sri Krishna College of Technology"
+  },
+  "description": "Java Backend Engineer specializing in Spring Boot, Microservices, Keycloak IAM, and scalable system design."
+}
