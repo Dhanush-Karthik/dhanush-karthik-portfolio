@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /cms
+Disallow: /cms/
 
-Sitemap: https://dhanushkarthik.dev/sitemap.xml
+Sitemap: https://dhanushkarthik.com/sitemap.xml

@@ -45,7 +45,7 @@ export default function Portfolio({ data }) {
             "@context": "https://schema.org", "@type": "Person",
             name: config.site_title || "Dhanush Karthik",
             jobTitle: config.site_subtitle || "Java Backend Engineer",
-            url: "https://dhanushkarthik.dev",
+            url: "https://dhanushkarthik.com",
             sameAs: socialLinks.map((s) => s.url),
           })}
         </script>

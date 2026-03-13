@@ -3,6 +3,12 @@
   to = "/index.html"
   status = 200
 
+[[redirects]]
+  from = "https://dhanushkarthik.netlify.app/*"
+  to = "https://dhanushkarthik.com/:splat"
+  status = 301
+  force = true
+
 [[headers]]
   for = "/*"
   [headers.values]
