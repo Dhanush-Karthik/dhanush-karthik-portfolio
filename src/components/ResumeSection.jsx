@@ -10,7 +10,7 @@ export default function ResumeSection({ resume }) {
   return (
     <section id="resume" ref={ref} className="section-container">
       <motion.div
-        initial={{ opacity: 0, y: 40 }}
+        initial={{ y: 40 }}
         animate={isInView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.7 }}
         className="max-w-2xl mx-auto text-center"
