@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 
 const bootLines = [
   "$ java -version",
@@ -12,60 +12,66 @@ const bootLines = [
   "Application ready ✓",
 ];
 
-export default function LoadingScreen() {
+export default function LoadingScreen({ onComplete }) {
   const [lines, setLines] = useState([]);
-  const [done, setDone] = useState(false);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
-    let i = 0;
+    let idx = 0;
     const interval = setInterval(() => {
-      if (i < bootLines.length) {
-        setLines((prev) => [...prev, bootLines[i]]);
-        i++;
-      } else {
-        setDone(true);
+      if (idx >= bootLines.length) {
         clearInterval(interval);
+        setTimeout(() => onCompleteRef.current?.(), 400);
+        return;
       }
-    }, 150);
+      const line = bootLines[idx];
+      idx++;
+      setLines((prev) => [...prev, line]);
+    }, 120);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <AnimatePresence>
-      {!done && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ background: "var(--c-bg-primary)" }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="terminal-window w-full max-w-xl mx-4">
-            <div className="terminal-header">
-              <div className="terminal-dot" style={{ background: "#f87171" }} />
-              <div className="terminal-dot" style={{ background: "#fbbf24" }} />
-              <div className="terminal-dot" style={{ background: "#4ade80" }} />
-              <span className="ml-3 text-xs font-mono" style={{ color: "var(--c-text-tertiary)" }}>
-                dk-portfolio — boot
-              </span>
-            </div>
-            <div className="terminal-body min-h-[240px]">
-              {lines.map((line, idx) => (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.15 }}
-                  style={{ color: line.startsWith("$") || line.includes("✓") ? "var(--c-accent-primary)" : "var(--c-text-secondary)" }}
-                  className={line.includes("✓") ? "font-bold" : ""}
-                >
-                  {line}
-                </motion.div>
-              ))}
-              <span className="inline-block w-2 h-4 ml-1 animate-cursor-blink" style={{ background: "var(--c-accent-primary)" }} />
-            </div>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <motion.div
+      className="fixed inset-0 z-[100] flex items-center justify-center"
+      style={{ background: "var(--c-bg-primary)" }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <div className="terminal-window w-full max-w-xl mx-4">
+        <div className="terminal-header">
+          <div className="terminal-dot" style={{ background: "#f87171" }} />
+          <div className="terminal-dot" style={{ background: "#fbbf24" }} />
+          <div className="terminal-dot" style={{ background: "#4ade80" }} />
+          <span className="ml-3 text-xs font-mono" style={{ color: "var(--c-text-tertiary)" }}>
+            dk-portfolio — boot
+          </span>
+        </div>
+        <div className="terminal-body min-h-[240px]">
+          {lines.map((line, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.12 }}
+              style={{
+                color:
+                  line.startsWith("$") || line.includes("✓")
+                    ? "var(--c-accent-primary)"
+                    : "var(--c-text-secondary)",
+              }}
+              className={line.includes("✓") ? "font-bold" : ""}
+            >
+              {line}
+            </motion.div>
+          ))}
+          <span
+            className="inline-block w-2 h-4 ml-1 animate-cursor-blink"
+            style={{ background: "var(--c-accent-primary)" }}
+          />
+        </div>
+      </div>
+    </motion.div>
   );
 }

@@ -1,4 +1,6 @@
+import { useState, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
+import { AnimatePresence } from "framer-motion";
 import Navbar from "../components/Navbar";
 import HeroSection from "../components/HeroSection";
 import AboutSection from "../components/AboutSection";
@@ -25,7 +27,11 @@ const sectionMap = {
 };
 
 export default function Portfolio({ data }) {
-  if (data.loading) return <LoadingScreen />;
+  const [bootDone, setBootDone] = useState(false);
+  const handleBootComplete = useCallback(() => setBootDone(true), []);
+
+  const showLoading = !bootDone || data.loading;
+
   const { config, socialLinks, sectionOrder } = data;
   const orderedSections = [...sectionOrder].filter((s) => s.visible).sort((a, b) => a.position - b.position);
 
@@ -44,7 +50,12 @@ export default function Portfolio({ data }) {
           })}
         </script>
       </Helmet>
-      <div className="relative min-h-screen">
+
+      <AnimatePresence>
+        {showLoading && <LoadingScreen key="loader" onComplete={handleBootComplete} />}
+      </AnimatePresence>
+
+      <div className="relative min-h-screen" style={{ opacity: showLoading ? 0 : 1, transition: "opacity 0.5s ease" }}>
         <div className="fixed inset-0 bg-grid-pattern pointer-events-none" />
         <div className="fixed top-0 left-0 right-0 h-[600px] bg-radial-glow pointer-events-none" />
         <Navbar socialLinks={socialLinks} sectionOrder={sectionOrder} />
