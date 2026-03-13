@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Github, Linkedin, Mail } from "lucide-react";
 
@@ -8,22 +8,37 @@ export default function Navbar({ socialLinks, sectionOrder }) {
   const [activeHash, setActiveHash] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const visibleSections = (sectionOrder || [])
-    .filter((s) => s.visible && s.id !== "hero")
-    .sort((a, b) => a.position - b.position);
+  const visibleSections = useMemo(
+    () => (sectionOrder || []).filter((s) => s.visible && s.id !== "hero").sort((a, b) => a.position - b.position),
+    [sectionOrder]
+  );
 
   useEffect(() => {
-    const sections = visibleSections.map((s) => document.getElementById(s.id)).filter(Boolean);
+    const ids = visibleSections.map((s) => s.id);
+    const elements = ids.map((id) => document.getElementById(id)).filter(Boolean);
+    if (!elements.length) return;
+
     const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.filter((e) => e.isIntersecting);
-        if (visible.length) setActiveHash(visible[0].target.id);
+      () => {
+        let best = null;
+        let bestTop = Infinity;
+        for (const el of elements) {
+          const rect = el.getBoundingClientRect();
+          const visibleTop = Math.max(rect.top, 0);
+          const visibleBottom = Math.min(rect.bottom, window.innerHeight);
+          if (visibleBottom - visibleTop > 80 && Math.abs(rect.top - 100) < bestTop) {
+            bestTop = Math.abs(rect.top - 100);
+            best = el.id;
+          }
+        }
+        if (best) setActiveHash(best);
       },
-      { threshold: 0.3, rootMargin: "-80px 0px -40% 0px" }
+      { threshold: [0, 0.1, 0.2, 0.5], rootMargin: "-60px 0px -30% 0px" }
     );
-    sections.forEach((el) => observer.observe(el));
+
+    elements.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, [sectionOrder]);
+  }, [visibleSections]);
 
   return (
     <>
@@ -50,6 +65,7 @@ export default function Navbar({ socialLinks, sectionOrder }) {
               <a
                 key={section.id}
                 href={`#${section.id}`}
+                onClick={() => setActiveHash(section.id)}
                 className="group relative flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200"
                 style={{ background: isActive ? "var(--c-bg-tertiary)" : "transparent" }}
               >
@@ -72,7 +88,7 @@ export default function Navbar({ socialLinks, sectionOrder }) {
                   {section.label.slice(0, 3)}
                 </span>
                 <span
-                  className="absolute left-full ml-3 px-2 py-1 rounded text-xs font-mono whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200"
+                  className="absolute left-full ml-3 px-2 py-1 rounded text-xs font-mono whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50"
                   style={{ background: "var(--c-bg-tertiary)", color: "var(--c-text-primary)", border: "1px solid var(--c-border)" }}
                 >
                   {section.label}
@@ -112,16 +128,11 @@ export default function Navbar({ socialLinks, sectionOrder }) {
 
       <AnimatePresence>
         {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="lg:hidden fixed inset-0 z-40 pt-14"
-            style={{ background: "rgba(5,10,5,0.95)", backdropFilter: "blur(20px)" }}
-          >
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+            className="lg:hidden fixed inset-0 z-40 pt-14" style={{ background: "rgba(5,10,5,0.95)", backdropFilter: "blur(20px)" }}>
             <nav className="flex flex-col items-center gap-6 pt-12">
               {visibleSections.map((section) => (
-                <a key={section.id} href={`#${section.id}`} onClick={() => setMobileOpen(false)}
+                <a key={section.id} href={`#${section.id}`} onClick={() => { setMobileOpen(false); setActiveHash(section.id); }}
                   className="font-mono text-lg transition-colors duration-200"
                   style={{ color: activeHash === section.id ? "var(--c-accent-primary)" : "var(--c-text-secondary)" }}>
                   {section.label.toLowerCase()}()
