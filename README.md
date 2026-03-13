@@ -5,8 +5,8 @@ Dark-themed, terminal-inspired design with a full CMS dashboard powered by Supab
 
 ## Live
 
-- **Portfolio**: [dhanushkarthik.dev](https://dhanushkarthik.dev)
-- **CMS**: [dhanushkarthik.dev/cms](https://dhanushkarthik.dev/cms)
+- **Portfolio**: [dhanushkarthik.com](https://dhanushkarthik.dev)
+- **CMS**: [dhanushkarthik.com/cms](https://dhanushkarthik.dev/cms)
 
 ## Tech Stack
 
