@@ -181,7 +181,7 @@ function Stage({ data, line }) {
 
   return (
     <section ref={sectionRef} className="frame xp-stage" aria-label="Experience and education">
-      <div className="xp-pin" ref={pinRef} style={{ "--pin": `${pinVh}svh` }}>
+      <div className="xp-pin" ref={pinRef} style={{ "--pin": `${pinVh + 100}svh` }}>
         <div className="xp-stick">
           <div className="xp-canvas" aria-hidden="true">
             {ready && near && (
