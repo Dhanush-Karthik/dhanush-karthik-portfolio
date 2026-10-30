@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { isAuthenticated, clearAuth } from "../lib/auth";
 import { supabase, updateRow, insertRow, deleteRow, upsertSingle } from "../lib/supabase";
 import { uploadFile } from "../lib/storage";
-import { LogOut, Save, Plus, Trash2, Palette, User, Briefcase, Code, FolderOpen, MessageSquare, Link, Layout, ChevronDown, ChevronRight, Check, AlertCircle, GripVertical, GraduationCap, Quote, Layers, Eye, EyeOff, ArrowUp, ArrowDown, Upload, X, FileText, Image } from "lucide-react";
+import { LogOut, Save, Plus, Trash2, Palette, User, Briefcase, Code, FolderOpen, MessageSquare, Link, Layout, ChevronDown, ChevronRight, Check, AlertCircle, GripVertical, GraduationCap, Quote, Layers, Eye, EyeOff, ArrowUp, ArrowDown, Upload, X, FileText, Server, Rocket } from "lucide-react";
+import { slugify } from "../lib/slug";
 
 const TABS = [
   { id: "site", label: "Site Config", icon: Layout },
@@ -15,6 +16,7 @@ const TABS = [
   { id: "experience", label: "Experience", icon: Briefcase },
   { id: "education", label: "Education", icon: GraduationCap },
   { id: "projects", label: "Projects", icon: FolderOpen },
+  { id: "subdomains", label: "Subdomains", icon: Server },
   { id: "resume", label: "Resume", icon: FileText },
   { id: "testimonials", label: "Testimonials", icon: Quote },
   { id: "social", label: "Social Links", icon: Link },
@@ -192,6 +194,8 @@ export default function CMSDashboard() {
   const [contact, setContact] = useState(null);
   const [resume, setResume] = useState(null);
   const [sectionOrder, setSectionOrder] = useState([]);
+  const [subdomains, setSubdomains] = useState([]);
+  const [publishing, setPublishing] = useState(false);
 
   useEffect(() => { if (!isAuthenticated()) navigate("/cms"); }, [navigate]);
 
@@ -199,18 +203,19 @@ export default function CMSDashboard() {
 
   const loadData = useCallback(async () => {
     const q = (t) => supabase.from(t).select("*");
-    const [sc,h,a,sk,ex,ed,pr,te,sl,co,re,so] = await Promise.all([
+    const [sc,h,a,sk,ex,ed,pr,te,sl,co,re,so,sd] = await Promise.all([
       q("site_config").single(), q("hero").single(), q("about").single(),
       q("skills").order("sort_order"), q("experience").order("sort_order"),
       q("education").order("sort_order"), q("projects").order("sort_order"),
       q("testimonials").order("sort_order"), q("social_links").order("sort_order"),
       q("contact").single(), q("resume").single(), q("section_order").order("position"),
+      q("subdomains").order("sort_order"),
     ]);
     if(sc.data){setSiteConfig(sc.data);setColors(sc.data.colors||{});} if(h.data)setHero(h.data);
     if(a.data)setAbout(a.data); if(sk.data)setSkills(sk.data); if(ex.data)setExperience(ex.data);
     if(ed.data)setEducation(ed.data); if(pr.data)setProjects(pr.data); if(te.data)setTestimonials(te.data);
     if(sl.data)setSocialLinks(sl.data); if(co.data)setContact(co.data); if(re.data)setResume(re.data);
-    if(so.data?.length)setSectionOrder(so.data);
+    if(so.data?.length)setSectionOrder(so.data); if(sd.data)setSubdomains(sd.data);
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -238,6 +243,16 @@ export default function CMSDashboard() {
     finally { setSaving(false); }
   }
 
+  // Triggers a Netlify build so the prerendered HTML, sitemap and JSON-LD pick up CMS changes.
+  async function publish() {
+    const hook = import.meta.env.VITE_NETLIFY_BUILD_HOOK;
+    if (!hook) { showToast("Set VITE_NETLIFY_BUILD_HOOK to enable publishing", "error"); return; }
+    setPublishing(true);
+    try { const res = await fetch(hook, { method: "POST" }); if (!res.ok) throw new Error(`Build hook returned ${res.status}`); showToast("Publish started — live in ~2 min"); }
+    catch (err) { showToast(err.message, "error"); }
+    finally { setPublishing(false); }
+  }
+
   async function removeItem(table, id, setter) {
     try { await deleteRow(table, id); setter((prev) => prev.filter((item) => item.id !== id)); showToast("Deleted"); }
     catch (err) { showToast(err.message, "error"); }
@@ -260,6 +275,12 @@ export default function CMSDashboard() {
           ))}
           <Field label="Accent Primary Glow" value={colors.accent_primary_glow} onChange={(v) => setColors({...colors,accent_primary_glow:v})} placeholder="rgba(74,222,128,0.15)" />
         </div>
+        <p className="font-mono text-xs mt-6 mb-4 uppercase tracking-wider" style={{color:"var(--c-accent-primary)"}}>Portfolio v2 palette (public site)</p>
+        <div className="grid sm:grid-cols-2 gap-x-6">
+          {[["paper","#E8E6E1"],["ink","#111311"],["terminal","#07110A"],["phosphor","#4ADE80"],["signal","#E5432D"],["tape","#F2C94C"]].map(([k,def]) => (
+            <Field key={k} label={k} type="color" value={colors[k]||def} onChange={(v) => setColors({...colors,[k]:v})} />
+          ))}
+        </div>
         <SaveBtn onClick={() => saveSingle("site_config", {...siteConfig,colors})} saving={saving} />
       </div>) : null;
 
@@ -267,6 +288,8 @@ export default function CMSDashboard() {
 
       case "hero": return hero ? (<div>
         <FileUploadField label="Photo" value={hero.photo_url} onChange={(v) => setHero({...hero,photo_url:v})} accept="image/*" folder="hero" showToast={showToast} />
+        <FileUploadField label="3D portrait cutout (transparent PNG/WebP)" value={hero.cutout_url} onChange={(v) => setHero({...hero,cutout_url:v})} accept="image/*" folder="hero" showToast={showToast} />
+        <FileUploadField label="3D portrait depth map (optional, grayscale)" value={hero.depth_url} onChange={(v) => setHero({...hero,depth_url:v})} accept="image/*" folder="hero" showToast={showToast} />
         <Field label="Greeting" value={hero.greeting} onChange={(v) => setHero({...hero,greeting:v})} placeholder="public class" />
         <Field label="Name" value={hero.name} onChange={(v) => setHero({...hero,name:v})} />
         <Field label="Tagline Prefix" value={hero.tagline_prefix} onChange={(v) => setHero({...hero,tagline_prefix:v})} />
@@ -328,7 +351,10 @@ export default function CMSDashboard() {
         {projects.map((p,idx) => (<div key={p.id||idx} className="glass-card p-4 mb-4">
           <div className="flex items-center justify-between mb-3"><span className="font-mono text-sm font-bold" style={{color:"var(--c-text-primary)"}}>{p.title||"New"}</span><button onClick={() => removeItem("projects",p.id,setProjects)}><Trash2 size={14} style={{color:"var(--c-accent-danger)"}} /></button></div>
           <Field label="Title" value={p.title} onChange={(v) => setProjects(projects.map((x,i)=>i===idx?{...x,title:v}:x))} />
+          <Field label="URL slug (/projects/…)" value={p.slug} placeholder={slugify(p.title)} onChange={(v) => setProjects(projects.map((x,i)=>i===idx?{...x,slug:slugify(v)}:x))} />
+          <div className="grid grid-cols-2 gap-4"><Field label="Year" value={p.year} onChange={(v) => setProjects(projects.map((x,i)=>i===idx?{...x,year:v}:x))} /><Field label="Role" value={p.role} onChange={(v) => setProjects(projects.map((x,i)=>i===idx?{...x,role:v}:x))} /></div>
           <Field label="Description" type="textarea" value={p.description} onChange={(v) => setProjects(projects.map((x,i)=>i===idx?{...x,description:v}:x))} />
+          <Field label="Case study (blank line = new paragraph, ## = heading)" type="textarea" rows={8} value={p.case_study} onChange={(v) => setProjects(projects.map((x,i)=>i===idx?{...x,case_study:v}:x))} />
           <ArrayField label="Tech Stack" value={p.tech_stack} onChange={(v) => setProjects(projects.map((x,i)=>i===idx?{...x,tech_stack:v}:x))} />
           <Field label="GitHub URL" value={p.github_url} onChange={(v) => setProjects(projects.map((x,i)=>i===idx?{...x,github_url:v}:x))} />
           <Field label="Live URL" value={p.live_url} onChange={(v) => setProjects(projects.map((x,i)=>i===idx?{...x,live_url:v}:x))} />
@@ -336,7 +362,23 @@ export default function CMSDashboard() {
           <div className="flex items-center gap-3 mb-4"><label className="font-mono text-xs uppercase tracking-wider" style={{color:"var(--c-text-tertiary)"}}>Featured</label><input type="checkbox" checked={p.featured||false} onChange={(e) => setProjects(projects.map((x,i)=>i===idx?{...x,featured:e.target.checked}:x))} /></div>
           <Field label="Sort Order" type="number" value={p.sort_order} onChange={(v) => setProjects(projects.map((x,i)=>i===idx?{...x,sort_order:parseInt(v)}:x))} />
         </div>))}
-        <div className="flex gap-3 mt-4"><AddBtn onClick={() => setProjects([...projects,{title:"",description:"",tech_stack:[],github_url:"",live_url:"",screenshot_url:"",featured:false,sort_order:projects.length+1}])} label="Add Project" /><SaveBtn onClick={() => saveList("projects",projects)} saving={saving} /></div>
+        <div className="flex gap-3 mt-4"><AddBtn onClick={() => setProjects([...projects,{title:"",description:"",tech_stack:[],github_url:"",live_url:"",screenshot_url:"",featured:false,sort_order:projects.length+1}])} label="Add Project" /><SaveBtn onClick={() => saveList("projects",projects.map((p)=>({...p,slug:p.slug||slugify(p.title)})))} saving={saving} /></div>
+      </div>);
+
+      case "subdomains": return (<div>
+        <p className="text-sm mb-4" style={{color:"var(--c-text-secondary)"}}>Sites on your subdomains. They appear in the Network rack, the footer, the sitemap and the JSON-LD.</p>
+        {subdomains.map((d,idx) => (<div key={d.id||idx} className="glass-card p-4 mb-4">
+          <div className="flex items-center justify-between mb-3"><span className="font-mono text-sm font-bold" style={{color:"var(--c-text-primary)"}}>{d.host||"New"}</span><button onClick={() => removeItem("subdomains",d.id,setSubdomains)}><Trash2 size={14} style={{color:"var(--c-accent-danger)"}} /></button></div>
+          <Field label="Host" value={d.host} placeholder="blogs.dhanushkarthik.com" onChange={(v) => setSubdomains(subdomains.map((x,i)=>i===idx?{...x,host:v.replace(/^https?:\/\//,"").replace(/\/.*$/,"")}:x))} />
+          <Field label="Title" value={d.title} onChange={(v) => setSubdomains(subdomains.map((x,i)=>i===idx?{...x,title:v}:x))} />
+          <Field label="Description" type="textarea" rows={3} value={d.description} onChange={(v) => setSubdomains(subdomains.map((x,i)=>i===idx?{...x,description:v}:x))} />
+          <ArrayField label="Tags" value={d.tags} onChange={(v) => setSubdomains(subdomains.map((x,i)=>i===idx?{...x,tags:v}:x))} />
+          <FileUploadField label="Screenshot" value={d.screenshot_url} onChange={(v) => setSubdomains(subdomains.map((x,i)=>i===idx?{...x,screenshot_url:v}:x))} accept="image/*" folder="subdomains" showToast={showToast} />
+          <Field label="Status label" value={d.status} placeholder="live | beta | building" onChange={(v) => setSubdomains(subdomains.map((x,i)=>i===idx?{...x,status:v}:x))} />
+          <div className="flex items-center gap-3 mb-4"><label className="font-mono text-xs uppercase tracking-wider" style={{color:"var(--c-text-tertiary)"}}>Visible</label><input type="checkbox" checked={d.visible!==false} onChange={(e) => setSubdomains(subdomains.map((x,i)=>i===idx?{...x,visible:e.target.checked}:x))} /></div>
+          <Field label="Sort Order" type="number" value={d.sort_order} onChange={(v) => setSubdomains(subdomains.map((x,i)=>i===idx?{...x,sort_order:parseInt(v)}:x))} />
+        </div>))}
+        <div className="flex gap-3 mt-4"><AddBtn onClick={() => setSubdomains([...subdomains,{host:"",title:"",description:"",tags:[],screenshot_url:"",status:"live",visible:true,sort_order:subdomains.length+1}])} label="Add Subdomain" /><SaveBtn onClick={() => saveList("subdomains",subdomains)} saving={saving} /></div>
       </div>);
 
       case "resume": return (<div>
@@ -411,7 +453,8 @@ export default function CMSDashboard() {
       </aside>
       <main className="flex-1 overflow-y-auto">
         <header className="px-8 py-6 border-b" style={{borderColor:"var(--c-border)"}}>
-          <div className="flex items-center gap-3">{currentTab && <currentTab.icon size={20} style={{color:"var(--c-accent-primary)"}} />}<h1 className="text-xl font-bold" style={{fontFamily:"'Space Grotesk',sans-serif",color:"var(--c-text-primary)"}}>{currentTab?.label||"Dashboard"}</h1></div>
+          <div className="flex items-center gap-3">{currentTab && <currentTab.icon size={20} style={{color:"var(--c-accent-primary)"}} />}<h1 className="text-xl font-bold flex-1" style={{fontFamily:"'Space Grotesk',sans-serif",color:"var(--c-text-primary)"}}>{currentTab?.label||"Dashboard"}</h1>
+            <button onClick={publish} disabled={publishing} title="Rebuild the public site with the latest content" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-sm border" style={{borderColor:"var(--c-accent-primary)",color:"var(--c-accent-primary)"}}><Rocket size={14} />{publishing ? "Publishing..." : "Publish site"}</button></div>
         </header>
         <div className="p-8 max-w-3xl">{renderContent()}</div>
       </main>

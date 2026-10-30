@@ -3,7 +3,9 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Placeholder values keep imports from throwing when env vars are absent (local dev,
+// prerender without secrets); loadPortfolioData() skips fetching in that case.
+export const supabase = createClient(supabaseUrl || "http://localhost:54321", supabaseAnonKey || "anon");
 
 export async function fetchSiteConfig() {
   const { data, error } = await supabase.from("site_config").select("*").single();
@@ -97,5 +99,11 @@ export async function upsertSingle(table, row) {
 export async function fetchResume() {
   const { data, error } = await supabase.from("resume").select("*").single();
   if (error) return null;
+  return data;
+}
+
+export async function fetchSubdomains() {
+  const { data, error } = await supabase.from("subdomains").select("*").order("sort_order", { ascending: true });
+  if (error) return [];
   return data;
 }

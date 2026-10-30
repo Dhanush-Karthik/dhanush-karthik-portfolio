@@ -1,72 +1,34 @@
 # dk-portfolio
 
 Personal portfolio for **Dhanush Karthik** — Java Backend Engineer.
-Dark-themed, terminal-inspired design with a full CMS dashboard powered by Supabase.
+v2 "Stack Trace": paper sheets laid over a live terminal, with Three.js layers, scroll-driven transitions and an optional hand-gesture mode. Content is managed in a Supabase-backed CMS.
 
 ## Live
 
-- **Portfolio**: [dhanushkarthik.com](https://dhanushkarthik.dev)
-- **CMS**: [dhanushkarthik.com/cms](https://dhanushkarthik.dev/cms)
+- **Portfolio**: [dhanushkarthik.com](https://dhanushkarthik.com)
+- **CMS**: [dhanushkarthik.com/cms](https://dhanushkarthik.com/cms)
+- **Design proposal**: [docs/design/stack-trace-proposal.html](docs/design/stack-trace-proposal.html)
 
 ## Tech Stack
 
-| Layer       | Technology                          |
-|-------------|-------------------------------------|
-| Framework   | React 18 + Vite 5                   |
-| Styling     | Tailwind CSS 3                      |
-| Animation   | Framer Motion                       |
-| Icons       | Lucide React                        |
-| CMS / DB    | Supabase (PostgreSQL + RLS)         |
-| Auth        | ENV-based password (VITE_CMS_PASSWORD) |
-| SEO         | react-helmet-async + JSON-LD        |
-| Hosting     | Netlify (free tier)                 |
-| CI/CD       | GitHub Actions                      |
+| Layer       | Technology                                             |
+|-------------|--------------------------------------------------------|
+| Framework   | React 18 + Vite 5, prerendered to static HTML per route |
+| 3D          | three, @react-three/fiber, @react-three/drei            |
+| Motion      | Lenis smooth scroll, GSAP, CSS                          |
+| Hand mode   | @mediapipe/tasks-vision Hand Landmarker (on-device)     |
+| CMS / DB    | Supabase (PostgreSQL + RLS)                             |
+| SEO         | Prerendered HTML, react-helmet-async, JSON-LD graph, generated sitemap |
+| Hosting     | Netlify                                                 |
 
-## Features
+## How the public site is built
 
-- **Java/Terminal aesthetic** — hero styled as a Java class declaration, terminal window UI, monospace code syntax
-- **Left-side glass navbar** — unconventional vertical navigation rail with active section tracking and social links
-- **Big project cards** — full-width cards with screenshot images, live site iframe preview, tech stack badges, and direct links
-- **Fully CMS-driven** — every section editable via `/cms` dashboard
-- **Section ordering** — reorder and toggle visibility of portfolio sections from the CMS
-- **Color palette configurator** — change the entire site theme from the CMS
-- **Education section** — university, degree, grade/CGPA, timeline
-- **Testimonials section** — client quotes with toggle visibility from CMS
-- **ENV-based auth** — CMS protected by a password set via environment variable (no Supabase Auth needed)
-- **SEO optimized** — Open Graph, Twitter Cards, JSON-LD structured data, sitemap, robots.txt, canonical URL
-- **Responsive** — mobile-first with hamburger menu fallback on smaller screens
-- **Animated** — scroll-triggered reveals, Spring Boot boot sequence loading screen
-
-## Project Structure
-
-```
-dk-portfolio/
-├── .github/workflows/
-│   ├── pr-build.yml          # Build on every PR
-│   └── release.yml           # Manual release with tag
-├── public/
-│   ├── favicon.svg
-│   ├── robots.txt
-│   ├── sitemap.xml
-│   └── structured-data.json
-├── src/
-│   ├── components/           # UI sections (Hero, About, Skills, Experience,
-│   │                         #   Education, Projects, Testimonials, Contact,
-│   │                         #   Navbar, Footer, LoadingScreen)
-│   ├── hooks/                # usePortfolioData, useInView
-│   ├── lib/                  # supabase client, defaults, theme, auth
-│   ├── pages/                # Portfolio, CMSLogin, CMSDashboard
-│   ├── styles/               # Tailwind + custom CSS
-│   ├── App.jsx
-│   └── main.jsx
-├── supabase/
-│   └── schema.sql            # Full DB schema + seed data
-├── .env.example
-├── netlify.toml
-├── tailwind.config.js
-├── vite.config.js
-└── package.json
-```
+- `src/site/` is the public site. Each CMS section is one "sheet" (`src/site/sections/*`); the order and visibility still come from the `section_order` table.
+- `src/site/three/` holds the lazy-loaded WebGL scenes: CRT terminal background, 2.5D portrait, skills stack, project card fan. None of them hold content; all text is HTML.
+- `src/site/hand/` is hand mode. It turns gestures into ordinary pointer, click and scroll events.
+- Visitors on weak devices or with reduced motion get the flat 2D "print" mode; the HUD toggles it.
+- `npm run build` = client build → SSR build → `scripts/prerender.mjs`, which fetches content from Supabase and writes `index.html`, `projects/<slug>/index.html`, `404.html`, `app.html` (CMS shell) and `sitemap.xml`.
+- The CMS **Publish site** button calls a Netlify build hook, so edits reach the static HTML. Until then, live data is still fetched in the browser.
 
 ## Setup
 
@@ -111,7 +73,18 @@ Portfolio at `http://localhost:5173`, CMS at `http://localhost:5173/cms`.
 1. Push to GitHub
 2. Connect the repo in [Netlify](https://netlify.com)
 3. Build command: `npm run build`, publish directory: `dist`
-4. Add all three env vars in Netlify's environment settings
+4. Add all env vars in Netlify's environment settings, including `VITE_NETLIFY_BUILD_HOOK` (create it under Site settings → Build & deploy → Build hooks)
+
+### 6. v2 database migration
+
+Run `supabase/migrations-v2.sql` once in the Supabase SQL editor. It adds project slugs and case-study fields, the hero cutout/depth fields, the `subdomains` table (seeded with blogs.dhanushkarthik.com) and the `network` section.
+
+### 7. Search Console (for "dhanush karthik" and subdomains)
+
+1. Add a **Domain property** for `dhanushkarthik.com` (DNS TXT verification). It covers every subdomain.
+2. Submit `https://dhanushkarthik.com/sitemap.xml`; it lists the subdomain homepages too.
+3. On each subdomain site: no `noindex`, its own sitemap, a link back to dhanushkarthik.com, and JSON-LD with `"author": {"@id": "https://dhanushkarthik.com/#person"}`.
+4. Use the same name, "Dhanush Karthik", on LinkedIn, GitHub and X, and link them back to the site.
 
 ## GitHub Workflows
 
@@ -125,8 +98,9 @@ Add `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_CMS_PASSWORD` as re
 
 1. Navigate to `/cms`
 2. Enter the password from `VITE_CMS_PASSWORD`
-3. Edit sections: site config, colors, section order, hero, about, skills, experience, education, projects, testimonials, social links, contact
-4. Use the **Section Order** tab to reorder sections and toggle visibility (e.g., hide testimonials until ready)
+3. Edit sections: site config, colors, section order, hero, about, skills, experience, education, projects, subdomains, testimonials, social links, contact
+4. Press **Publish site** to rebuild the static pages
+5. Use the **Section Order** tab to reorder sections and toggle visibility (e.g., hide testimonials until ready)
 
 ## License
 

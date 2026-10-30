@@ -17,6 +17,7 @@ export const defaultHero = {
   tagline_prefix: "extends", tagline: "BackendEngineer",
   description: "Building robust, scalable backend systems with Java & Spring Boot. Specializing in microservices architecture, identity management, and API design.",
   cta_text: "View My Work", cta_link: "#projects", resume_url: "#", photo_url: "",
+  cutout_url: "/portrait/dk-cutout.webp", depth_url: "/portrait/dk-depth.webp",
 };
 
 export const defaultAbout = {
@@ -49,9 +50,9 @@ export const defaultEducation = [
 ];
 
 export const defaultProjects = [
-  { id: 1, title: "IAM Gateway Service", description: "Enterprise identity and access management service built on Keycloak. Handles authentication, authorization, and SSO for multiple client applications with custom realm configurations.", tech_stack: ["Java", "Keycloak", "Spring Security", "OAuth2", "Docker"], github_url: "", live_url: "", screenshot_url: "", featured: true, sort_order: 1 },
-  { id: 2, title: "Microservices Orchestrator", description: "Event-driven microservices platform using Spring Cloud. Includes service discovery, API gateway, circuit breakers, and distributed tracing for production workloads.", tech_stack: ["Spring Cloud", "Eureka", "Zuul", "Kafka", "Resilience4j"], github_url: "", live_url: "", screenshot_url: "", featured: true, sort_order: 2 },
-  { id: 3, title: "REST API Toolkit", description: "Reusable Spring Boot starter library for rapid API development. Includes standardized error handling, pagination, filtering, audit logging, and OpenAPI documentation generation.", tech_stack: ["Java", "Spring Boot", "OpenAPI", "JUnit 5", "Maven"], github_url: "", live_url: "", screenshot_url: "", featured: false, sort_order: 3 },
+  { id: 1, slug: "iam-gateway-service", year: "2024", role: "Backend Engineer", case_study: "", title: "IAM Gateway Service", description: "Enterprise identity and access management service built on Keycloak. Handles authentication, authorization, and SSO for multiple client applications with custom realm configurations.", tech_stack: ["Java", "Keycloak", "Spring Security", "OAuth2", "Docker"], github_url: "", live_url: "", screenshot_url: "", featured: true, sort_order: 1 },
+  { id: 2, slug: "microservices-orchestrator", year: "2024", role: "Backend Engineer", case_study: "", title: "Microservices Orchestrator", description: "Event-driven microservices platform using Spring Cloud. Includes service discovery, API gateway, circuit breakers, and distributed tracing for production workloads.", tech_stack: ["Spring Cloud", "Eureka", "Zuul", "Kafka", "Resilience4j"], github_url: "", live_url: "", screenshot_url: "", featured: true, sort_order: 2 },
+  { id: 3, slug: "rest-api-toolkit", year: "2023", role: "Author", case_study: "", title: "REST API Toolkit", description: "Reusable Spring Boot starter library for rapid API development. Includes standardized error handling, pagination, filtering, audit logging, and OpenAPI documentation generation.", tech_stack: ["Java", "Spring Boot", "OpenAPI", "JUnit 5", "Maven"], github_url: "", live_url: "", screenshot_url: "", featured: false, sort_order: 3 },
 ];
 
 export const defaultTestimonials = [
@@ -61,13 +62,13 @@ export const defaultTestimonials = [
 export const defaultSocialLinks = [
   { id: 1, platform: "LinkedIn", url: "https://www.linkedin.com/in/dhanush-karthik/", icon: "linkedin", sort_order: 1 },
   { id: 2, platform: "GitHub", url: "https://github.com/dhanushkarthik", icon: "github", sort_order: 2 },
-  { id: 3, platform: "Email", url: "mailto:hello@dhanushkarthik.dev", icon: "mail", sort_order: 3 },
+  { id: 3, platform: "Email", url: "mailto:hello@dhanushkarthik.com", icon: "mail", sort_order: 3 },
 ];
 
 export const defaultContact = {
   id: 1, heading: "Let's Connect",
   subtext: "Got a project idea, a backend challenge, or just want to talk Java? Drop me a message.",
-  email: "hello@dhanushkarthik.dev", show_form: true,
+  email: "hello@dhanushkarthik.com", show_form: true,
 };
 
 export const defaultResume = {
@@ -84,6 +85,11 @@ export const defaultSectionOrder = [
   { id: "education", label: "Education", position: 4, visible: true },
   { id: "projects", label: "Projects", position: 5, visible: true },
   { id: "resume", label: "Resume", position: 6, visible: true },
-  { id: "testimonials", label: "Testimonials", position: 7, visible: false },
-  { id: "contact", label: "Contact", position: 8, visible: true },
+  { id: "network", label: "Network", position: 7, visible: true },
+  { id: "testimonials", label: "Testimonials", position: 8, visible: false },
+  { id: "contact", label: "Contact", position: 9, visible: true },
+];
+
+export const defaultSubdomains = [
+  { id: 1, host: "blogs.dhanushkarthik.com", title: "Blogs", description: "Long-form notes on Java, Spring Boot, identity and backend system design.", tags: ["writing", "java", "spring"], screenshot_url: "", status: "live", sort_order: 1, visible: true },
 ];
