@@ -1,7 +1,9 @@
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
 
 [[redirects]]
   from = "https://dhanushkarthik.netlify.app/*"
@@ -9,15 +11,56 @@
   status = 301
   force = true
 
+[[redirects]]
+  from = "https://www.dhanushkarthik.com/*"
+  to = "https://dhanushkarthik.com/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://dhanushkarthik.dev/*"
+  to = "https://dhanushkarthik.com/:splat"
+  status = 301
+  force = true
+
+# CMS is client-only.
+[[redirects]]
+  from = "/cms/*"
+  to = "/app.html"
+  status = 200
+
+[[redirects]]
+  from = "/cms"
+  to = "/app.html"
+  status = 200
+
+# Projects added in the CMS since the last publish still render client-side.
+[[redirects]]
+  from = "/projects/*"
+  to = "/app.html"
+  status = 200
+
+# Everything else that isn't a real file is a 404 (served from 404.html automatically).
+
 [[headers]]
   for = "/*"
   [headers.values]
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Permissions-Policy = "camera=(self), microphone=(), geolocation=()"
 
 [[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/mediapipe/*"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000"
+
+[[headers]]
+  for = "/cms*"
+  [headers.values]
+    X-Robots-Tag = "noindex"

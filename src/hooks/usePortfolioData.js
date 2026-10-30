@@ -1,59 +1,17 @@
 import { useState, useEffect } from "react";
-import {
-  fetchSiteConfig, fetchHero, fetchAbout, fetchSkills,
-  fetchExperience, fetchProjects, fetchSocialLinks, fetchContact,
-  fetchEducation, fetchTestimonials, fetchSectionOrder, fetchResume,
-} from "../lib/supabase";
-import {
-  defaultConfig, defaultHero, defaultAbout, defaultSkills,
-  defaultExperience, defaultProjects, defaultSocialLinks, defaultContact,
-  defaultEducation, defaultTestimonials, defaultSectionOrder, defaultResume,
-} from "../lib/defaults";
+import { defaultData, loadPortfolioData, normalizeData } from "../lib/portfolioData";
 
-export function usePortfolioData() {
-  const [data, setData] = useState({
-    config: defaultConfig, hero: defaultHero, about: defaultAbout,
-    skills: defaultSkills, experience: defaultExperience,
-    education: defaultEducation, projects: defaultProjects,
-    testimonials: defaultTestimonials, socialLinks: defaultSocialLinks,
-    contact: defaultContact, resume: defaultResume,
-    sectionOrder: defaultSectionOrder, loading: true,
-  });
+// `initial` comes from the prerendered snapshot (window.__DK_DATA__) so hydration matches the static HTML.
+// Live data is then refetched so CMS edits show up before the next publish.
+export function usePortfolioData(initial) {
+  const [data, setData] = useState(() => ({ ...(initial ? normalizeData(initial) : defaultData), loading: !initial }));
 
   useEffect(() => {
-    async function load() {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      if (!supabaseUrl) {
-        setData((prev) => ({ ...prev, loading: false }));
-        return;
-      }
-      try {
-        const [config, hero, about, skills, experience, education, projects, testimonials, socialLinks, contact, resume, sectionOrder] =
-          await Promise.all([
-            fetchSiteConfig(), fetchHero(), fetchAbout(), fetchSkills(),
-            fetchExperience(), fetchEducation(), fetchProjects(),
-            fetchTestimonials(), fetchSocialLinks(), fetchContact(),
-            fetchResume(), fetchSectionOrder(),
-          ]);
-        setData({
-          config: config || defaultConfig, hero: hero || defaultHero,
-          about: about || defaultAbout,
-          skills: skills?.length ? skills : defaultSkills,
-          experience: experience?.length ? experience : defaultExperience,
-          education: education?.length ? education : defaultEducation,
-          projects: projects?.length ? projects : defaultProjects,
-          testimonials: testimonials?.length ? testimonials : defaultTestimonials,
-          socialLinks: socialLinks?.length ? socialLinks : defaultSocialLinks,
-          contact: contact || defaultContact,
-          resume: resume || defaultResume,
-          sectionOrder: sectionOrder?.length ? sectionOrder : defaultSectionOrder,
-          loading: false,
-        });
-      } catch {
-        setData((prev) => ({ ...prev, loading: false }));
-      }
-    }
-    load();
+    let alive = true;
+    loadPortfolioData()
+      .then((fresh) => { if (alive) setData({ ...fresh, loading: false }); })
+      .catch(() => { if (alive) setData((prev) => ({ ...prev, loading: false })); });
+    return () => { alive = false; };
   }, []);
 
   return data;
