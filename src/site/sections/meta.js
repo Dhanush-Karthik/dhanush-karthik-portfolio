@@ -9,7 +9,7 @@ export const SECTION_META = {
   network: { file: "Network", method: "network", cmd: "cat /etc/hosts", dir: "etc/hosts", nav: "network", variant: "term" },
   resume: { file: "Resume", method: "resume", cmd: "curl -O resume.pdf", dir: "resume", nav: "resume", variant: "term" },
   testimonials: { file: "Testimonials", method: "praise", cmd: 'grep -r "praise"', dir: "praise", nav: "praise", variant: "paper" },
-  contact: { file: "Contact", method: "contact", cmd: "mail dhanush", dir: "contact", nav: "contact", variant: "term" },
+  contact: { file: "Contact", method: "contact", cmd: "mail dhanush", dir: "contact", nav: "contact", variant: "paper" },
 };
 
 export function traceFor(id, line) {

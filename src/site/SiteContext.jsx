@@ -47,14 +47,40 @@ export function SiteProvider({ data, children }) {
     const el = typeof target === "string" ? document.getElementById(target.replace(/^#/, "")) : target;
     if (el == null && typeof target !== "number") return;
     const offset = opts.offset ?? 0;
-    if (lenisRef.current) lenisRef.current.scrollTo(el ?? target, { offset, duration: opts.duration ?? 1.4 });
-    else if (typeof target === "number") window.scrollTo({ top: target });
-    else el.scrollIntoView({ behavior: "auto" });
+    if (lenisRef.current) lenisRef.current.scrollTo(el ?? target, { offset, duration: opts.duration ?? 1.4, onComplete: opts.onComplete });
+    else {
+      if (typeof target === "number") window.scrollTo({ top: target });
+      else el.scrollIntoView({ behavior: "auto" });
+      if (opts.onComplete) requestAnimationFrame(() => opts.onComplete());
+    }
   }, []);
 
+  // Cinematic sections take over the page for a while; wheel, touch and keys are held until released.
+  const lockScroll = useCallback((on) => {
+    const l = lenisRef.current;
+    if (l) { if (on) l.stop(); else l.start(); }
+    document.documentElement.classList.toggle("dk-locked", !!on);
+  }, []);
+
+  // Relative scrolling for hand gestures, called every frame. Lenis resets its target to wherever the page
+  // currently is on each call, so a stream of small nudges would lose most of what they add up to; keep our
+  // own running target while they keep coming.
+  const nudge = useRef({ y: 0, t: 0 });
   const scrollBy = useCallback((dy) => {
-    if (lenisRef.current) lenisRef.current.scrollTo(lenisRef.current.targetScroll + dy, { lerp: 0.18 });
-    else window.scrollBy(0, dy);
+    const l = lenisRef.current;
+    if (!l) { window.scrollBy(0, dy); return; }
+    const n = nudge.current, now = performance.now();
+    const base = now - n.t < 220 ? n.y : l.targetScroll;
+    n.y = Math.max(0, Math.min(l.limit, base + dy)); n.t = now;
+    l.scrollTo(n.y, { lerp: 0.18 });
+  }, []);
+
+  // Absolute scroll for hand gestures that drag the page itself (the tear). Follows the target with a little
+  // weight; pass `duration` (seconds) for a timed glide instead.
+  const scrollToY = useCallback((y, opts = {}) => {
+    const l = lenisRef.current;
+    if (l) l.scrollTo(y, { lerp: opts.lerp ?? 0.22, duration: opts.duration, onComplete: opts.onComplete });
+    else { window.scrollTo(0, y); opts.onComplete?.(); }
   }, []);
 
   // Route change with a colour wipe: the panel rises, the route swaps, the panel drops away.
@@ -89,8 +115,8 @@ export function SiteProvider({ data, children }) {
 
   const value = useMemo(() => ({
     data, mode, setMode, mounted, active, setActive, paletteOpen, setPaletteOpen,
-    hand, setHand, scrollTo, scrollBy, go, three: mounted && mode === "stack",
-  }), [data, mode, setMode, mounted, active, paletteOpen, hand, scrollTo, scrollBy, go]);
+    hand, setHand, scrollTo, scrollBy, scrollToY, lockScroll, go, three: mounted && mode === "stack",
+  }), [data, mode, setMode, mounted, active, paletteOpen, hand, scrollTo, scrollBy, scrollToY, lockScroll, go]);
 
   return (
     <SiteContext.Provider value={value}>

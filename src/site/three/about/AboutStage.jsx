@@ -59,7 +59,8 @@ void main() {
   p.z += fly * (aRnd.z - 0.5) * 3.0;
 
   // always breathing a little
-  p += 0.04 * vec3(sin(uTime * 0.8 + aRnd.x * 40.0), cos(uTime * 0.6 + aRnd.y * 37.0), sin(uTime * 0.7 + aRnd.z * 29.0));
+  // (only a shimmer once the words have formed, or the edges of the letters blur)
+  p += (0.006 + 0.05 * fly) * vec3(sin(uTime * 0.8 + aRnd.x * 40.0), cos(uTime * 0.6 + aRnd.y * 37.0), sin(uTime * 0.7 + aRnd.z * 29.0));
 
   vec4 wp = modelMatrix * vec4(p, 1.0);
 
@@ -97,11 +98,11 @@ void main() {
   vec4 mv = viewMatrix * wp;
   gl_Position = projectionMatrix * mv;
   // size is in world units, so a bigger screen gets bigger particles instead of a thinner cloud
-  gl_PointSize = uSize * uPx * (0.55 + aRnd.z * 0.95) * (1.0 + infl * 1.2 + ring * 1.6) / -mv.z;
+  gl_PointSize = uSize * uPx * (0.8 + aRnd.z * 0.5) * (1.0 + infl * 1.2 + ring * 1.6) / -mv.z;
 
   vec3 col = mix(pal(a.w), pal(b.w), m);
   vCol = col * (0.7 + 0.5 * aRnd.y) + col * (infl * 0.8 + ring * 1.2 + g * 0.9);
-  vA = 0.5 + 0.5 * aRnd.x;
+  vA = 0.78 + 0.22 * aRnd.x;
 }`;
 
 const FRAG = /* glsl */ `
@@ -110,9 +111,8 @@ varying float vA;
 void main() {
   float r = length(gl_PointCoord - 0.5);
   if (r > 0.5) discard;
-  float a = smoothstep(0.5, 0.05, r);
-  a *= a;
-  gl_FragColor = vec4(vCol * a * vA * 2.1, a * vA);
+  float a = smoothstep(0.5, 0.18, r);      // a hard-edged little disc: soft dots smear into a fog
+  gl_FragColor = vec4(vCol * a * vA * 0.62, a * vA);
 }`;
 
 const hex = (h) => {
@@ -171,7 +171,7 @@ function Cloud({ scenes, count }) {
   const uniforms = useMemo(() => {
     const pal = readPalette();
     return {
-      uBeat: { value: 0 }, uTime: { value: 0 }, uPx: { value: 1 }, uSize: { value: 0.019 }, uOut: { value: 0 }, uFloor: { value: -2.8 }, uHalfW: { value: 5 },
+      uBeat: { value: 0 }, uTime: { value: 0 }, uPx: { value: 1 }, uSize: { value: 0.0125 }, uOut: { value: 0 }, uFloor: { value: -2.8 }, uHalfW: { value: 5 },
       uPtr: { value: new THREE.Vector3(99, 99, 0) },
       uPulse: { value: new THREE.Vector4(0, 0, 9, 0) },
       uC0: { value: hex("#6F8F7A") }, uC1: { value: hex(pal.phosphor) },
@@ -192,12 +192,22 @@ function Cloud({ scenes, count }) {
       st.pulseY = -(e.clientY / window.innerHeight * 2 - 1) * st.hh;
       audio.drop(0.35);
     };
+    // hand mode: opening a fist throws a bigger shockwave from the hand
+    const burst = (e) => {
+      if (!about.active) return;
+      st.pulseAge = 0;
+      st.pulseX = (e.detail.x / window.innerWidth * 2 - 1) * st.hw;
+      st.pulseY = -(e.detail.y / window.innerHeight * 2 - 1) * st.hh;
+      audio.drop(0.6);
+    };
     window.addEventListener("pointermove", move, { passive: true });
     window.addEventListener("pointerdown", down, { passive: true });
+    window.addEventListener("dk:burst", burst);
     document.documentElement.addEventListener("mouseleave", leave);
     return () => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerdown", down);
+      window.removeEventListener("dk:burst", burst);
       document.documentElement.removeEventListener("mouseleave", leave);
     };
   }, []);
@@ -252,8 +262,8 @@ function Cloud({ scenes, count }) {
     g.position.set(st.gx, st.gy, 0);
     g.scale.setScalar(sc);
     const t = u.uTime.value;
-    g.rotation.y += ((Math.sin(t * 0.22) * 0.14 + pointer.x * 0.28) - g.rotation.y) * (1 - Math.exp(-dt * 3));
-    g.rotation.x += ((-pointer.y * 0.14 + Math.sin(t * 0.17) * 0.04) - g.rotation.x) * (1 - Math.exp(-dt * 3));
+    g.rotation.y += ((Math.sin(t * 0.22) * 0.05 + pointer.x * 0.14) - g.rotation.y) * (1 - Math.exp(-dt * 3));
+    g.rotation.x += ((-pointer.y * 0.08 + Math.sin(t * 0.17) * 0.02) - g.rotation.x) * (1 - Math.exp(-dt * 3));
   });
 
   if (!geo) return null;
@@ -289,7 +299,7 @@ export default function AboutStage({ scenes, active, mobile }) {
         style={{ position: "absolute", inset: 0, touchAction: "pan-y" }}
         onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
       >
-        <Cloud scenes={scenes} count={mobile ? 12000 : wide ? 34000 : 26000} />
+        <Cloud scenes={scenes} count={mobile ? 36000 : wide ? 120000 : 90000} />
       </Canvas>
     </Boundary>
   );

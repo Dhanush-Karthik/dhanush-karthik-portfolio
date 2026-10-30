@@ -3,7 +3,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Text } from "@react-three/drei";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { pointer } from "../../lib/pointer";
+import { pointer, gesture } from "../../lib/pointer";
 import { smooth, outCubic, readPalette, clamp, lerp } from "../hero/state";
 import { HISTORY, LANES, ROW } from "./history";
 import { trace } from "./state";
@@ -305,7 +305,7 @@ function Graph({ mobile, inset, onHover, onPick }) {
     const dist = clamp(span / (free * 2 * Math.tan((FOV * Math.PI) / 360) * asp), 8, 24);
     const away = (1 - A) * 3.2 + trace.out * 2.5;
     const lookX = mobile ? 1.0 : 2.95;
-    camera.position.set(lookX + 2.1 + fx * 0.25 + pointer.x * 0.55, yF + 1.5 + (1 - A) * 2.2 + pointer.y * 0.3, dist + away);
+    camera.position.set(lookX + 2.1 + fx * 0.25 + pointer.x * 0.55 + gesture.twist * 2.2, yF + 1.5 + (1 - A) * 2.2 + pointer.y * 0.3, (dist + away) * (1 - gesture.zoom * 0.28));
     camera.lookAt(lookX + fx * 0.25, yF - 0.35, fz * 0.3);
     if (mobile) camera.setViewOffset(size.width, size.height, 0, size.height * 0.1, size.width, size.height);
     else camera.setViewOffset(size.width, size.height, -inset * 0.5, 0, size.width, size.height);

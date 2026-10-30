@@ -2,7 +2,7 @@ import { Component, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Text } from "@react-three/drei";
 import * as THREE from "three";
-import { pointer } from "../../lib/pointer";
+import { pointer, gesture } from "../../lib/pointer";
 import { smooth, readPalette, clamp } from "../hero/state";
 import { deploy, setHot, setActive } from "./state";
 import { CW, CH, makeFace, makeCardMaterial, cardGeometry } from "./card";
@@ -471,7 +471,7 @@ function Scene({ projects, sel, onSelect, onOpen, drag }) {
     const cy = 0.15 + pointer.y * 0.2;
     camera.position.x += (cx - camera.position.x) * 0.06;
     camera.position.y += (cy - camera.position.y) * 0.06;
-    camera.position.z = L.dist * (1 - h * 0.05);
+    camera.position.z = L.dist * (1 - h * 0.05) * (1 - gesture.zoom * 0.2);
     camera.lookAt(0, 0, 0);
 
     if (!L.mobile) rot.current.v = (n - 1) / 2;

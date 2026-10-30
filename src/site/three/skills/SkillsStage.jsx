@@ -2,7 +2,7 @@ import { Component, Suspense, useCallback, useEffect, useMemo, useRef } from "re
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Text } from "@react-three/drei";
 import * as THREE from "three";
-import { pointer } from "../../lib/pointer";
+import { pointer, gesture } from "../../lib/pointer";
 import { smooth, outBack, readPalette } from "../hero/state";
 import { rack } from "./state";
 
@@ -369,7 +369,7 @@ function Rig({ rows, onHover, onPick, mobile }) {
     const left = Math.max(24, size.width * 0.05) + Math.min(512, size.width * 0.36) + size.width * 0.02;
     const right = size.width * 0.985;
     const regionW = Math.max(1, (right - left) * wpx);
-    const sc = mobile ? Math.min(fit, (2 * halfW * 1.02) / 4.4) : Math.min(fit, regionW / 5.7);
+    const sc = (mobile ? Math.min(fit, (2 * halfW * 1.02) / 4.4) : Math.min(fit, regionW / 5.7)) * (1 + gesture.zoom * 0.2);
     const tx = mobile ? 0.3 * sc : ((left + right) / 2 - size.width / 2) * wpx + 0.75 * sc;
     // the rack drifts up as the pick moves down it, so the open tray stays near the middle
     const ty = (mobile ? halfH * 0.3 : halfH * 0.02) + (rack.sel - (n - 1) / 2) * PITCH * 0.38 * sc;
@@ -380,7 +380,7 @@ function Rig({ rows, onHover, onPick, mobile }) {
     if (r) { r.position.set(s.x, s.y, 0); r.scale.setScalar(s.s); }
     const q = rig.current;
     if (q) {
-      const yaw = (mobile ? -0.2 : -0.72) + pointer.x * 0.16 + Math.sin(t * 0.2) * 0.03;
+      const yaw = (mobile ? -0.2 : -0.72) + pointer.x * 0.16 + Math.sin(t * 0.2) * 0.03 + gesture.twist * 0.8;
       q.rotation.y += (yaw - q.rotation.y) * (1 - Math.exp(-dt * 3));
       q.rotation.x += (-pointer.y * 0.04 - q.rotation.x) * (1 - Math.exp(-dt * 3));
     }

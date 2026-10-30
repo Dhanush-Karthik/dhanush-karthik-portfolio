@@ -89,17 +89,19 @@ export default function Portrait({ url, layout, onLoaded }) {
 
   useEffect(() => () => Object.values(mats).forEach((m) => m.dispose()), [mats]);
 
-  useFrame((_, dt) => {
+  useFrame(({ clock }, dt) => {
     const g = group.current;
     if (!g) return;
     if (!loaded.current) { loaded.current = true; onLoaded?.(); }
+    // stage.t is the intro clock and jumps to 99 the moment the intro ends, so anything that keeps
+    // moving afterwards (the idle bob) must run on the real clock or the photo hops when it does.
     const t = stage.t;
     const k = clamp((t - 0.85) / 1.05);
     const pop = outBack(k, 1.45);
     shared.uOpacity.value = smooth(0.85, 1.25, t);
     const s = lerp(0.78, 1, pop);
     g.scale.setScalar(s);
-    g.position.y = layout.figY + (1 - pop) * -h * 0.22 + Math.sin(t * 1.1) * 0.012 * layout.H;
+    g.position.y = layout.figY + (1 - pop) * -h * 0.22 + Math.sin(clock.elapsedTime * 1.1) * 0.005 * layout.H * smooth(1.9, 2.6, t);
     const ease = 1 - Math.exp(-dt * 4.5);
     g.rotation.y += (pointer.x * 0.2 - g.rotation.y) * ease;
     g.rotation.x += (-pointer.y * 0.06 - g.rotation.x) * ease;

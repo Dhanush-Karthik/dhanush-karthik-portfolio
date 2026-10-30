@@ -19,7 +19,7 @@ const W = 1500;               // canvas width in px; 8.6 world units wide
 const UNIT = 8.6 / W;
 const MAX_H = 4.5 / UNIT;     // tallest block of text that still fits the stage
 const TONES = [2, 1, 3, 1];   // signal, phosphor, tape, phosphor — per line
-const DUST = 0.07;            // share of particles left drifting around the words
+const DUST = 0.025;           // share of particles left drifting around the words
 
 function canvas(h, stretch = "expanded") {
   const cv = document.createElement("canvas");
@@ -58,18 +58,32 @@ function layout(lines, fontFamily, cap, stretch) {
     y += size * gap;
   });
   const d = g.getImageData(0, 0, W, H).data;
-  const px = [];
-  for (let yy = 0; yy < H; yy += 2) {
-    const row = rows.find((r) => yy >= r.from && yy <= r.to);
-    for (let x = 0; x < W; x += 2) if (d[(yy * W + x) * 4 + 3] > 140) px.push(x, yy, row ? row.i : 0);
-  }
-  return { px, H };
+  return { d, H, cell: (_, yy) => { const row = rows.find((r) => yy >= r.from && yy <= r.to); return row ? row.i : 0; } };
 }
 
-function sample(n, seed, px, H, toneOf) {
+// Lit pixels of a drawn canvas, thinned on a regular grid just enough that there are no more of
+// them than particles. Every lit cell then gets at least one particle, so the letters come out
+// solid with crisp edges instead of a random speckle with holes in it.
+function gather({ d, H, cell }, n) {
+  const lit = (x, y) => d[(y * W + x) * 4 + 3] > 110;
+  let all = 0;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (lit(x, y)) all++;
+  const step = Math.max(1, Math.ceil(Math.sqrt(all / Math.max(1, n * 0.97))));
+  const px = [];
+  for (let y = 0; y < H; y += step) for (let x = 0; x < W; x += step) if (lit(x, y)) px.push(x, y, cell(x, y));
+  return { px, H, step };
+}
+
+function sample(n, seed, src, toneOf) {
   const r = rng(seed);
+  const { px, H, step } = gather(src, n);
   const out = new Float32Array(n * 4);
   const cnt = px.length / 3;
+  // cells are handed out in a shuffled order, so every one is covered before any is used twice
+  const order = new Uint32Array(cnt);
+  for (let i = 0; i < cnt; i++) order[i] = i;
+  for (let i = cnt - 1; i > 0; i--) { const j = (r() * (i + 1)) | 0; const t = order[i]; order[i] = order[j]; order[j] = t; }
+  let next = 0;
   for (let i = 0; i < n; i++) {
     if (r() < DUST || cnt === 0) {
       out[i * 4] = (r() * 2 - 1) * 5.2;
@@ -78,10 +92,10 @@ function sample(n, seed, px, H, toneOf) {
       out[i * 4 + 3] = 0;
       continue;
     }
-    const k = ((r() * cnt) | 0) * 3;
-    out[i * 4] = (px[k] - W / 2 + (r() - 0.5) * 2) * UNIT;
-    out[i * 4 + 1] = -(px[k + 1] - H / 2 + (r() - 0.5) * 2) * UNIT;
-    out[i * 4 + 2] = (r() - 0.5) * 0.35;
+    const k = order[next++ % cnt] * 3;
+    out[i * 4] = (px[k] - W / 2 + r() * step) * UNIT;
+    out[i * 4 + 1] = -(px[k + 1] - H / 2 + r() * step) * UNIT;
+    out[i * 4 + 2] = (r() - 0.5) * 0.12;
     out[i * 4 + 3] = toneOf(px[k + 2], r);
   }
   return out;
@@ -89,8 +103,7 @@ function sample(n, seed, px, H, toneOf) {
 
 // The opening word: one line, mostly signal red with a few bright flecks.
 export function makeHello(n, word, fontFamily) {
-  const { px, H } = layout([word], fontFamily, 250, "expanded");
-  return sample(n, 7, px, H, (_, r) => (r() < 0.6 ? 2 : r() < 0.7 ? 3 : 1));
+  return sample(n, 7, layout([word], fontFamily, 250, "expanded"), (_, r) => (r() < 0.88 ? 2 : 3));
 }
 
 // The words that matter in a paragraph, written large. Long phrases are broken into one word
@@ -103,8 +116,7 @@ export function makeWords(n, phrases, fontFamily, seed = 11) {
     if (lines.length + parts.length > 6 && lines.length) return;
     parts.forEach((w) => { lines.push(w); group.push(pi); });
   });
-  const { px, H } = layout(lines, fontFamily, 300, "semi-condensed");
-  return sample(n, seed, px, H, (line, r) => (r() < 0.12 ? 3 : TONES[group[line] % TONES.length]));
+  return sample(n, seed, layout(lines, fontFamily, 300, "semi-condensed"), (line, r) => (r() < 0.05 ? 3 : TONES[group[line] % TONES.length]));
 }
 
 // The stats: big numbers in a grid (a row for one or two, 2 × 2 for up to four).
@@ -117,7 +129,6 @@ export function makeStats(n, values, fontFamily) {
   const { g } = canvas(H);
   const rowH = (H - 40) / rowsN;
   const probe = g;
-  const px = [];
   // one size for every number, so none looks smaller than the rest
   probe.font = `900 100px ${fontFamily}`;
   const fit = vals.map((v) => (100 * cellW * 0.8) / Math.max(1, probe.measureText(String(v)).width));
@@ -131,13 +142,8 @@ export function makeStats(n, values, fontFamily) {
     g.fillText(text, cx, cy);
   });
   const d = g.getImageData(0, 0, W, H).data;
-  for (let y = 0; y < H; y += 2) {
-    const row = Math.min(rowsN - 1, Math.floor(Math.max(0, y - 20) / rowH));
-    for (let x = 0; x < W; x += 2) {
-      if (d[(y * W + x) * 4 + 3] > 140) px.push(x, y, row * cols + Math.min(cols - 1, Math.floor(x / cellW)));
-    }
-  }
-  return sample(n, 19, px, H, (cell, r) => (r() < 0.12 ? 1 : [2, 3, 1, 2][cell % 4]));
+  const cell = (x, y) => Math.min(rowsN - 1, Math.floor(Math.max(0, y - 20) / rowH)) * cols + Math.min(cols - 1, Math.floor(x / cellW));
+  return sample(n, 19, { d, H, cell }, (c, r) => (r() < 0.05 ? 3 : [2, 3, 1, 2][c % 4]));
 }
 
 // ---- which words to write for a paragraph ----
