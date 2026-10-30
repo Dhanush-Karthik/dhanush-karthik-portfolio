@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Hand, Command, Menu, X, Layers, FileText } from "lucide-react";
+import { Hand, Command, Menu, X, Layers, FileText, Volume2, VolumeX } from "lucide-react";
 import { useSite } from "../SiteContext";
 import { SECTION_META } from "../sections/meta";
+import * as audio from "../lib/audio";
 
 export default function Hud({ sections }) {
   const { active, mode, setMode, hand, setHand, setPaletteOpen } = useSite();
@@ -12,6 +13,10 @@ export default function Hud({ sections }) {
   const open = openOn === pathname;
   const setOpen = (v) => setOpenOn(v ? pathname : null);
   const onHome = pathname === "/";
+  const [sound, setSound] = useState(true);
+  // The saved preference lives in localStorage, which the server render can't read.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setSound(audio.isOn()); }, []);
   const dir = onHome ? (SECTION_META[active]?.dir ?? "") : pathname.replace(/^\//, "");
 
   useEffect(() => {
@@ -37,6 +42,9 @@ export default function Hud({ sections }) {
         <div className="hud-actions">
           <button className="hud-btn" onClick={() => setPaletteOpen(true)} aria-label="Open command line" title="Command line ( / )">
             <Command size={14} /><span className="lbl">cmd</span><kbd className="lbl">/</kbd>
+          </button>
+          <button className="hud-btn" onClick={() => { audio.setOn(!sound); setSound(!sound); }} aria-label={sound ? "Mute sound" : "Turn sound on"} title={sound ? "Sound on — click to mute" : "Sound off — click to turn on"}>
+            {sound ? <Volume2 size={14} /> : <VolumeX size={14} />}
           </button>
           <button className="hud-btn" aria-pressed={handOn} onClick={() => setHand(handOn ? "off" : "intro")} title="Control the site with hand gestures">
             <Hand size={14} /><span className="lbl">{hand === "loading" ? "loading" : "hand"}</span>
