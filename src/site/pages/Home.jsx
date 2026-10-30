@@ -17,12 +17,13 @@ import Contact from "../sections/Contact";
 const SECTIONS = { hero: Hero, about: About, skills: Skills, experience: Experience, education: Education, projects: Projects, network: Network, resume: Resume, testimonials: Testimonials, contact: Contact };
 
 export default function Home({ sections }) {
-  const { data, setActive } = useSite();
+  const { data, setActive, three } = useSite();
   const { config } = data;
   const title = `Dhanush Karthik — ${config.site_subtitle || "Java Backend Engineer"}`;
   const desc = config.meta_description || "Dhanush Karthik is a Java Backend Engineer building Spring Boot microservices, Keycloak IAM and REST APIs.";
 
-  // HUD path follows the frame closest to the middle of the screen.
+  // HUD path follows the frame closest to the middle of the screen. The 3D stages replace the flat
+  // sections, so observe again whenever the mode flips.
   useEffect(() => {
     const els = sections.map((s) => document.getElementById(s.id)).filter(Boolean);
     const io = new IntersectionObserver((entries) => {
@@ -30,7 +31,7 @@ export default function Home({ sections }) {
     }, { rootMargin: "-48% 0px -48% 0px" });
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, [sections, setActive]);
+  }, [sections, setActive, three]);
 
   // Arriving with a #hash from another route.
   useEffect(() => {
@@ -61,7 +62,9 @@ export default function Home({ sections }) {
         {sections.map((s, i) => {
           const C = SECTIONS[s.id];
           if (!C) return null;
-          const prev = i > 0 ? SECTION_META[sections[i - 1].id]?.variant : null;
+          // With WebGL on, Experience (and the education branch inside it) is a dark stage, not paper.
+          const pid = i > 0 ? sections[i - 1].id : null;
+          const prev = pid ? (three && (pid === "experience" || pid === "education") ? "term" : SECTION_META[pid]?.variant) : null;
           return <C key={s.id} data={data} line={i + 1} prev={prev} />;
         })}
       </main>

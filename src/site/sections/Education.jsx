@@ -1,7 +1,11 @@
 import Sheet from "../components/Sheet";
+import { useSite } from "../SiteContext";
 import { traceFor, SECTION_META } from "./meta";
 
 export default function Education({ data, line, prev }) {
+  const { three } = useSite();
+  // With WebGL on, education is a branch of the Experience graph (it carries the #education anchor).
+  if (three && data.sectionOrder?.some((s) => s.id === "experience" && s.visible)) return null;
   return (
     <Sheet id="education" variant="paper" prev={prev} trace={traceFor("education", line)} cmd={SECTION_META.education.cmd} label="Education">
       <h2 className="display" style={{ fontSize: "clamp(2.4rem, 7vw, 5.5rem)", margin: "0 0 40px" }}>Education</h2>
