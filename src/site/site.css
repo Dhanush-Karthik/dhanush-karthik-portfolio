@@ -190,6 +190,7 @@ html[data-mode="print"] .sheet.term { background: var(--term); }
 .hero.stage-on .hero-sheet::before, .hero.stage-on .hero-sheet::after { display: none; }
 .hero-canvas { position: absolute; inset: 0; z-index: 1; pointer-events: auto; }
 .hero-canvas.off { visibility: hidden; pointer-events: none; }
+.hero-canvas.thru { pointer-events: none; }
 .hero.stage-on .hero-ui { position: absolute; inset: 0; z-index: 3; transition: opacity .8s ease, transform .8s cubic-bezier(.2,.8,.2,1); }
 .hero.stage-wait .hero-ui { opacity: 0; transform: translateY(14px); }
 .hero.stage-on .hero-ui .sheet-inner { opacity: var(--ov, 1); transform: translate3d(0, calc((1 - var(--ov, 1)) * -26px), 0); pointer-events: none; }
@@ -223,21 +224,54 @@ html[data-mode="print"] .sheet.term { background: var(--term); }
 .btn[disabled] { opacity: .45; pointer-events: none; }
 
 /* ---------------------------------------------------------------- ABOUT */
-.about-grid { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.4fr) minmax(0, .8fr); gap: clamp(28px, 4vw, 56px); align-items: start; }
-.select-frame { position: relative; border: 1.5px solid var(--signal); padding: 10px; background: rgba(255,255,255,.35); }
-.select-frame img { width: 100%; aspect-ratio: 3/4.2; object-fit: cover; object-position: 50% 15%; background: var(--paper-2); }
-.select-frame .h { position: absolute; width: 10px; height: 10px; background: #fff; border: 1.5px solid var(--signal); }
-.select-frame .h.tl { left: -6px; top: -6px; } .select-frame .h.tr { right: -6px; top: -6px; } .select-frame .h.bl { left: -6px; bottom: -6px; } .select-frame .h.br { right: -6px; bottom: -6px; }
-.select-frame .h.tm { left: calc(50% - 5px); top: -6px; } .select-frame .h.bm { left: calc(50% - 5px); bottom: -6px; }
-.select-frame .dims { position: absolute; left: 50%; bottom: -30px; transform: translateX(-50%); background: var(--signal); color: #fff; font: 600 .68rem/1 var(--mono); padding: 4px 6px; white-space: nowrap; }
+/* flat layout: print mode / no WebGL */
+.about-flat { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, .8fr); gap: clamp(28px, 4vw, 56px); align-items: start; }
 .about-hello { font: 900 clamp(3rem, 7vw, 6rem)/.85 var(--display); font-stretch: 125%; text-transform: uppercase; letter-spacing: -.04em; margin: 0 0 18px; }
 .about-bio { display: flex; flex-direction: column; gap: 14px; }
 .about-bio p:first-child { font-weight: 700; font-size: 1.15rem; }
 .stamps { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.stamp { border: 2.5px solid var(--signal); color: var(--signal); padding: 12px 10px; text-align: center; transform: rotate(var(--r, -3deg)); mix-blend-mode: multiply; }
+.stamp { border: 2.5px solid var(--signal); color: var(--signal); padding: 12px 10px; text-align: center; transform: rotate(var(--r, -3deg)); }
 .stamp b { display: block; font: 900 2rem/1 var(--display); font-stretch: 125%; }
 .stamp span { font: 600 .66rem/1.2 var(--mono); text-transform: uppercase; letter-spacing: .06em; }
-@media (max-width: 960px) { .about-grid { grid-template-columns: 1fr; } .select-frame { max-width: 320px; } }
+@media (max-width: 960px) { .about-flat { grid-template-columns: 1fr; } }
+
+/* stage layout: one pinned screen of particles, the copy changes chapter on top of it */
+.about-stage { background: var(--term); color: var(--term-text); }
+.about-pin { position: relative; height: calc(100vh + var(--pin, 200svh)); height: calc(100svh + var(--pin, 200svh)); }
+.about-stick { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; background: radial-gradient(110% 90% at 68% 42%, #0F2015 0%, var(--term) 62%); }
+.about-canvas { position: absolute; inset: 0; }
+.about-ui { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; padding-top: calc(var(--hud-h) + 24px); pointer-events: none; }
+.about-ui .wrap { max-width: none; margin: 0; padding-left: max(24px, 5vw); padding-right: max(24px, 3vw); }
+.about-ui .frame-trace { color: var(--phosphor-dim); }
+.about-ui .frame-cmd { color: var(--phosphor); }
+.about-ui .frame-head { margin-bottom: 0; }
+.about-body { flex: 1; display: flex; align-items: flex-end; width: 100%; padding-bottom: clamp(40px, 10svh, 104px); }
+.about-copy { display: grid; width: min(33rem, 34vw); }
+.about-panel { grid-area: 1 / 1; align-self: end; opacity: 0; will-change: opacity, transform; pointer-events: auto; }
+.about-panel p { margin: 0 0 14px; font: 400 clamp(1rem, 1.35vw, 1.18rem)/1.62 var(--body); color: var(--term-text); text-wrap: pretty; }
+.about-panel .about-tag { font: 500 .8rem/1.3 var(--mono); color: var(--phosphor); margin-bottom: 14px; }
+.about-h { margin: 0 0 14px; font: 900 clamp(2.1rem, 4.4vw, 3.9rem)/.9 var(--display); font-stretch: 125%; text-transform: uppercase; letter-spacing: -.035em; color: #fff; text-wrap: balance; }
+.about-panel .about-sub { font: 600 .9rem/1.3 var(--mono); color: var(--tape); letter-spacing: .04em; text-transform: uppercase; }
+.about-sub span { color: var(--phosphor-dim); margin-left: 6px; }
+.about-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 32px; margin-top: 4px; }
+.about-stat b { display: block; font: 900 clamp(1.7rem, 2.6vw, 2.4rem)/1 var(--display); font-stretch: 125%; color: var(--tape); letter-spacing: -.02em; }
+.about-stat span { display: block; margin-top: 6px; font: 500 .7rem/1.3 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--term-text); }
+.about-hint { position: absolute; right: var(--gutter-r); bottom: 64px; margin: 0; font: 700 1.35rem/1 var(--hand); color: var(--tape); transform: rotate(-3deg); }
+.about-count { position: absolute; right: var(--gutter-r); bottom: 30px; display: flex; align-items: center; gap: 12px; font: 500 .76rem/1 var(--mono); color: var(--phosphor-dim); }
+.about-count i { display: block; width: 84px; height: 2px; background: var(--term-line); position: relative; }
+.about-count i::after { content: ""; position: absolute; inset: 0; background: var(--phosphor); transform-origin: 0 50%; transform: scaleX(var(--bar, 0)); }
+.about-hint, .about-count { opacity: calc(1 - var(--out, 0)); }
+@media (hover: none) { .about-hint { display: none; } }
+@media (max-aspect-ratio: 17/20) {
+  .about-body { padding-bottom: 76px; }
+  .about-copy { width: 100%; }
+  .about-panel { background: linear-gradient(transparent, rgba(7,17,10,.82) 24px); padding-top: 28px; }
+  .about-count { bottom: 26px; left: var(--gutter-l); right: auto; }
+}
+
+/* the particles pile up on the straight top edge of the section after About: no torn rim there */
+.about-stage + .frame { margin-top: 0; }
+.about-stage + .frame .sheet { box-shadow: 0 -1px 0 rgba(77,255,141,.55), 0 -14px 44px rgba(77,255,141,.1); }
 
 /* ---------------------------------------------------------------- SKILLS */
 .skills-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: clamp(24px, 4vw, 56px); align-items: center; }

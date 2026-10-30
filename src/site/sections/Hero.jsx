@@ -27,6 +27,7 @@ export default function Hero({ data, line }) {
   const sectionRef = useRef(null);
   const pinRef = useRef(null);
   const uiRef = useRef(null);
+  const canvasRef = useRef(null);
   const [failed, setFailed] = useState(false);
   const [paused, setPaused] = useState(false);
   const on = three && !failed;
@@ -69,6 +70,8 @@ export default function Hero({ data, line }) {
       ui.style.setProperty("--ov", String(ov));
       ui.classList.toggle("dead", ov < 0.5);
     }
+    // once the page is tearing, the canvas is only an overlay with a gap in it: let clicks through
+    canvasRef.current?.classList.toggle("thru", on && q > 0.1);
     const next = sectionRef.current?.nextElementSibling;
     if (next) {
       const hold = on && q > 0.1 && q < 1;
@@ -100,7 +103,7 @@ export default function Hero({ data, line }) {
         <div className="hero-stick">
           <div className="hero-sheet sheet paper">
             {on && (
-              <div className={`hero-canvas ${paused ? "off" : ""}`}>
+              <div ref={canvasRef} className={`hero-canvas ${paused ? "off" : ""}`}>
                 <Suspense fallback={null}>
                   <HeroStage items={marquee} cutout={hero.cutout_url} first={first} last={last} paused={paused} onFail={() => setFailed(true)} />
                 </Suspense>

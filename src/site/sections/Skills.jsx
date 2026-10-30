@@ -12,7 +12,7 @@ export default function Skills({ data, line, prev }) {
   const [hot, setHot] = useState(-1);
   // Bottom of the architecture stack first: infra → data → frameworks → languages → architecture.
   return (
-    <Sheet id="skills" variant="term" prev={prev} trace={traceFor("skills", line)} cmd={SECTION_META.skills.cmd} label="Skills">
+    <Sheet id="skills" variant="term" torn={!three} prev={prev} trace={traceFor("skills", line)} cmd={SECTION_META.skills.cmd} label="Skills">
       <RibbonTitle text="Stack" onPaper={false} />
       <div className="skills-grid">
         <ul className="dep-tree" aria-label="Skills by category">
